@@ -1,5 +1,4 @@
 """logfetcher finds IP addresses in logs and displays their frequency."""
-import argparse
 import os
 from pathlib import Path
 
@@ -14,35 +13,31 @@ class PossibleSudoRequired(Error):
 
 class LogFetcher:
 
-    def valid_path(self, path: str) -> Path | None:
-        """Validates that a path is accessible."""
+    def valid_path(self, path: str) -> Path:
+        """Validates that a path's parent directory exists and is readable."""
         dirpath: Path = Path(path)
         try:
-            # Resolve the parent dir. Pattern matching is later.
+            # strict=True will raise FileNotFoundError if path doesn't exist.
             resolved_path: Path = dirpath.parent.resolve(strict=True)
-            # is_dir will fail if it does not exist.
-            if not resolved_path.is_dir:
-                raise NotADirectoryError
-            os.access(resolved_path, os.R_OK)
         except PermissionError as e:
             raise PossibleSudoRequired(
-                "Access denied at %s, try again with sudo: %s" % (path, e)
+                f"Access denied during path resolution for \"{path}\", "
+                "try again with sudo"
             ) from e
+
+        if not resolved_path.is_dir():
+            raise NotADirectoryError(
+                f"{resolved_path} is not a directory."
+            )
+
+        # Also check for read access, which resolve() does not guarantee.
+        if not os.access(resolved_path, os.R_OK):
+            raise PossibleSudoRequired(
+                f"No read access to directory {resolved_path}, "
+                "try again with sudo"
+            )
+
         return resolved_path
-
-
-def main() -> None:
-    parser: argparse.ArgumentParser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--target", help="The target file location and pattern.", required=True
-    )
-    args = parser.parse_args()
-    log_fetcher = LogFetcher()
-    log_fetcher.valid_path(args.target)
-
-
-if __name__ == "__main__":
-    main()
 
 # Organizing my thoughts:
 # What does this program do?
