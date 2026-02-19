@@ -3,12 +3,6 @@ import argparse
 import os
 from pathlib import Path
 
-parser: argparse.ArgumentParser = argparse.ArgumentParser()
-parser.add_argument(
-    "target", help="The target file location and pattern."
-)
-args = parser.parse_args()
-
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -33,14 +27,22 @@ class LogFetcher:
         except PermissionError as e:
             raise PossibleSudoRequired(
                 "Access denied at %s, try again with sudo: %s" % (path, e)
-            )
+            ) from e
         return resolved_path
 
 
-if __name__ == "__main__":
+def main() -> None:
+    parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--target", help="The target file location and pattern.", required=True
+    )
+    args = parser.parse_args()
     log_fetcher = LogFetcher()
     log_fetcher.valid_path(args.target)
 
+
+if __name__ == "__main__":
+    main()
 
 # Organizing my thoughts:
 # What does this program do?

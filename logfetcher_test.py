@@ -1,6 +1,7 @@
 """Test the logfetcher."""
 
 import unittest
+from unittest import mock
 
 import pyfakefs.fake_filesystem_unittest
 
@@ -14,38 +15,50 @@ class TestValidPath(pyfakefs.fake_filesystem_unittest.TestCase):
 
     def setUp(self):
         self.setUpPyfakefs()
-        self.fs.add_real_directory('/path/to/directory')
-        self.fs.add_real_file('/path/to/directory/file-that-exists.log')
-        self.fs.add_real_file('/path/to/directory/file-that-exists-2.log')
         assert not self.fs.exists(
             '/path/to/directory/file-that-does-not-exist.log')
-        # How do I ensure that the current working directory is
-        # '/path/to/directory'?
-        # That way, '.' will map to '/path/to/directory'.
+        self.fs.create_dir('/path/to/directory')
+        self.fs.create_file('/path/to/directory/file-that-exists.log')
+        self.fs.create_file('/path/to/directory/file-that-exists-2.log')
+        self.fs.cwd = '/path/to/directory'
 
-    def test_valid_path_success(self):
-        # Test with current directory which should always be accessible
+    @mock.patch('os.getcwd', return_value='/path/to/directory')
+    def test_valid_path_success(self, mock_getcwd):
+        """Test with a file in the current directory."""
         path = "."
         result = self.log_fetcher.valid_path(path)
         self.assertIsInstance(result, logfetcher.Path)
+        self.assertEqual(result, logfetcher.Path('/path/to/directory'))
 
-    def test_valid_path_permission_error(self):
-        # Test a path that typically requires sudo/root access
+    @mock.patch(
+        'os.path.isdir', return_value=False, side_effect=PermissionError)
+    def test_valid_path_permission_error(self, mock_isdir):
+        """Test a path where permissions are denied."""
+        self.fs.create_dir('/root', perm_bits=0o000)
         path = "/root/test.log"
         with self.assertRaises(logfetcher.PossibleSudoRequired):
             self.log_fetcher.valid_path(path)
 
-    def test_valid_path_not_found(self):
-        # Test a non-existent directory
+    @mock.patch(
+        'os.path.isdir', return_value=False, side_effect=FileNotFoundError)
+    def test_valid_path_not_found(self, mock_isdir):
+        """Test a path that does not exist."""
         path = "/non/existent/path/file.log"
         with self.assertRaises(FileNotFoundError):
             self.log_fetcher.valid_path(path)
 
 
-class TestMain(unittest.TestCase):
-    # Use a flagsaver decorator for argparse
+class TestMain(pyfakefs.fake_filesystem_unittest.TestCase):
+    def setUp(self):
+        self.setUpPyfakefs()
+        self.fs.create_dir('/path/to/directory')
+
+    @mock.patch(
+        'sys.argv',
+        ['logfetcher.py', '--target', '/path/to/directory/some.log'])
     def test_main(self):
-        pass
+        """Tests that main runs without raising an exception."""
+        logfetcher.main()
 
 
 if __name__ == "__main__":
