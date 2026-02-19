@@ -1,5 +1,30 @@
+[project]
+name = "python-practice"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
 [tool.coverage.run]
 omit = [
-    "*_test.py",
     "tests/*",
+    "*/tests/*",
+    "*tests/*"
+]
+
+[tool.pytest.ini_options]
+# Run coverage report for every `uv run pytest`
+# This project will remain small, so this is ok.
+addopts = "--cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.setuptools]
+packages = ["logfetcher"]
+
+[dependency-groups]
+dev = [
+    "pyfakefs>=6.1.1",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
 ]
