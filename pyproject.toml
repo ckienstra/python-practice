@@ -19,6 +19,23 @@ omit = [
 addopts = "--cov-report=term-missing"
 testpaths = ["tests"]
 
+[tool.ruff]
+# The directories Ruff should analyze
+# This prevents it from accidentally linting virtual environments or build folders
+src = ["logfetcher", "tests"]
+line-length = 88
+
+[tool.mypy]
+# The directories Mypy should type-check
+files = ["logfetcher", "tests"]
+# Enforce strict type checking across the project
+strict = true
+
+# Be slightly more lenient with type checking inside the test suite
+[[tool.mypy.overrides]]
+module = "tests.*"
+strict = false
+
 [tool.setuptools]
 packages = ["logfetcher"]
 
