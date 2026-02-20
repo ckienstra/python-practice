@@ -45,7 +45,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           SCORE=$(grep -Po 'Your code has been rated at \K[-0-9.]+' pylint_report.txt || echo "0.00")
-          uvx anybadge --label=pylint --value=$SCORE --file=pylint.svg 5=red 7=orange 9=yellow 10=green
+          uvx anybadge --label=pylint --value=$SCORE --file=pylint.svg --overwrite 5=red 7=orange 9=yellow 10=green
 
       - name: Commit Pylint Badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
