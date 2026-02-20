@@ -23,6 +23,8 @@ jobs:
         run: uv sync --all-extras --dev
       - name: Install project
         run: uv pip install -e .
+      - name: Generate requirements.txt
+        run: uv pip freeze > requirements.txt
       - name: Run Pylint and commit badge
         uses: kgpl/gh-pylint@v1
         with:
