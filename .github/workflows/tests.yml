@@ -35,17 +35,18 @@ jobs:
     - name: Run unit tests and coverage
       # uv run automatically uses the virtual environment created by uv sync
       # Note: replace 'logfetcher' if you want to measure a different directory
-      run: uv run pytest --cov=logfetcher --cov-report=term --cov-report=xml
+      run: uv run pytest --cov=logfetcher --cov-report=term --cov-report=xml --junitxml=pytest.xml
 
-    - name: Generate Coverage Badge
+    - name: Generate badges
       # Only generate and commit the badge when pushing to main, not on PRs
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      # uvx securely downloads and runs the tool on the fly
-      run: uv run coverage-badge -o coverage.svg -f
+      run: |
+        uv run genbadge coverage -i coverage.xml -o coverage.svg
+        uv run genbadge tests -i pytest.xml -o tests.svg
 
-    - name: Commit Coverage Badge
+    - name: Commit badges
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
-        commit_message: "chore: update coverage badge"
-        file_pattern: coverage.svg
+        commit_message: "chore: update badges"
+        file_pattern: "*.svg"

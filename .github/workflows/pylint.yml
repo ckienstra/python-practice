@@ -2,6 +2,9 @@ name: Pylint
 
 on: [push]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,4 +24,13 @@ jobs:
       - name: Install project
         run: uv pip install -e .
       - name: Analysing the code with pylint
-        run: uv run pylint $(git ls-files '*.py')
+        run: uv run pylint --output-format=json:pylint.json $(git ls-files '*.py') || exit 0
+      - name: Generate Linter Badge
+        if: always()
+        run: uv run genbadge pylint -i pylint.json -o pylint.svg
+      - name: Commit Linter badge
+        if: always()
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update pylint badge"
+          file_pattern: "pylint.svg"
