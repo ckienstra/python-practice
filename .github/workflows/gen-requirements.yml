@@ -1,0 +1,41 @@
+name: Generate Requirements
+description: Some integrations require `pip`, but I prefer `uv`. This action creates a requirements.txt based on this project's pyproject.yaml and uv.lock.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+permissions:
+  contents: write
+
+jobs:
+  build-requirements:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Enforce locked dependencies
+      # Fails the pipeline if uv.lock is missing or out-of-sync with pyproject.toml
+      run: uv lock --locked
+
+    - name: Export Production Requirements
+      run: uv export --no-hashes --no-emit-project -o requirements.txt
+
+    - name: Export Development Requirements
+      run: uv export --only-group dev --no-hashes --no-emit-project -o requirements-dev.txt
+
+    - name: Commit Requirements Files
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "chore: sync requirements.txt and requirements-dev.txt"
+        file_pattern: "requirements*.txt"

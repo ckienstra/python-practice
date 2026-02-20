@@ -13,6 +13,12 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      # If one Python version fails, continue running the others to see full results
+      fail-fast: false
+      matrix:
+        # Define the Python versions you want to test against
+        python-version: ["3.12", "3.13", "3.14"]
 
     steps:
     - name: Check out repository
@@ -22,11 +28,12 @@ jobs:
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
-        python-version: "3.12" # Matches your .python-version
+        # Uses python-version from the "strategy"
+        python-version: ${{ matrix.python-version }}
         cache-dependency-glob: pyproject.toml
 
     - name: Install dependencies
-      # Syncs your pyproject.toml / uv.lock to an isolated virtual environment
+      # Syncs pyproject.toml / uv.lock to an isolated virtual environment
       run: uv sync --all-extras --dev
 
     - name: Install project
@@ -34,18 +41,17 @@ jobs:
 
     - name: Run unit tests and coverage
       # uv run automatically uses the virtual environment created by uv sync
-      # Note: replace 'logfetcher' if you want to measure a different directory
       run: uv run pytest --cov=logfetcher --cov-report=term --cov-report=xml --junitxml=pytest.xml
 
     - name: Generate badges
-      # Only generate and commit the badge when pushing to main, not on PRs
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      # Only generate and commit the badge when pushing 3.12 to main to prevent merge conflicts
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.python-version == '3.12'
       run: |
         uv run genbadge coverage -i coverage.xml -o coverage.svg
         uv run genbadge tests -i pytest.xml -o tests.svg
 
     - name: Commit badges
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.python-version == '3.12'
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "chore: update badges"
