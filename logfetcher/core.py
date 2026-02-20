@@ -13,6 +13,7 @@ class PossibleSudoRequired(Error):
 
 
 class LogFetcher:
+    """LogFetcher is an object to fetch logs and find IP addresses."""
 
     def __init__(self, logger: logging.Logger | None = None) -> None:
         """Initializes the LogFetcher."""
@@ -45,6 +46,7 @@ class LogFetcher:
         dirpath: Path,
         pattern: str,
     ) -> list[Path]:
+        """Match files against a pattern."""
         matches: list[Path] = []
         for file in dirpath.glob(pattern):
             try:
@@ -59,6 +61,7 @@ class LogFetcher:
         matches: list[Path],
         excludes: list[str],
     ) -> list[Path]:
+        """Remove excluded files from matches."""
         scrubbed_matches: list[Path] = matches.copy()
         # Exclude is almost certainly a smaller list than matches.
         for exclude in excludes:
@@ -72,12 +75,13 @@ class LogFetcher:
         targets: list[str],
         excludes: list[str],
     ) -> list[Path]:
+        """Gather files from a list of targets."""
         matches: list[Path] = []
         for target in targets:
             parent: str = target.rsplit("/", 1)[0]
             pattern: str = target.rsplit("/", 1)[1]
-            dir: Path = self.valid_path(parent)
-            files: list[Path] = self.match_files(dir, pattern)
+            resolved_dir: Path = self.valid_path(parent)
+            files: list[Path] = self.match_files(resolved_dir, pattern)
             scrubbed_files: list[Path] = self.scrub_excluded(files, excludes)
             matches.extend(scrubbed_files)
         return matches

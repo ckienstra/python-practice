@@ -1,15 +1,20 @@
 """Test the logfetcher CLI."""
 
+import importlib
 import runpy
 import unittest
 from unittest import mock
 
-import logfetcher.__main__
 import pyfakefs.fake_filesystem_unittest
+
+import logfetcher.__main__
 
 
 class TestCli(pyfakefs.fake_filesystem_unittest.TestCase):
+    """Test the logfetcher CLI."""
+
     def setUp(self) -> None:
+        """Sets up the test environment."""
         self.setUpPyfakefs()
         self.fs.create_dir('/path/to/directory')
 
@@ -47,10 +52,9 @@ class TestCli(pyfakefs.fake_filesystem_unittest.TestCase):
         # This test is almost purely symbolic :-) just to reach 100% coverage.
         # We need to reload the module to ensure the top-level code is re-run,
         # as Python caches imports.
-        import importlib
         importlib.reload(logfetcher.__main__)
         mock_main.assert_not_called()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

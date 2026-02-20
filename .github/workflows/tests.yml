@@ -28,6 +28,9 @@ jobs:
       # Syncs your pyproject.toml / uv.lock to an isolated virtual environment
       run: uv sync --all-extras --dev
 
+    - name: Install project
+      run: uv pip install -e .
+
     - name: Run unit tests and coverage
       # uv run automatically uses the virtual environment created by uv sync
       # Note: replace 'logfetcher' if you want to measure a different directory

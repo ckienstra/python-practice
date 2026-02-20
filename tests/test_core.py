@@ -6,13 +6,16 @@ import pathlib
 import unittest
 from unittest import mock
 
-import logfetcher.core as core
 import pyfakefs.fake_filesystem_unittest
+
+import logfetcher.core as core
 
 
 class TestValidPath(pyfakefs.fake_filesystem_unittest.TestCase):
+    """Test the valid_path method."""
 
     def setUp(self) -> None:
+        """Sets up the test environment."""
         # Because pyfakefs needs to be setup before mocks, these tests don't
         # respond well to the @mock.patch decorator. Patch with a context
         # manager instead.
@@ -24,7 +27,7 @@ class TestValidPath(pyfakefs.fake_filesystem_unittest.TestCase):
 
     def test_valid_path_success(self) -> None:
         """Test with a file in the current directory."""
-        path = "."
+        path = '.'
         result = self.log_fetcher.valid_path(path)
         self.assertIsInstance(result, pathlib.Path)
         self.assertEqual(result, pathlib.Path('/good/path'))
@@ -32,13 +35,13 @@ class TestValidPath(pyfakefs.fake_filesystem_unittest.TestCase):
     def test_valid_path_permission_error(self) -> None:
         """Test a path where permissions are denied."""
         self.fs.create_dir('/root', perm_bits=0o000)
-        path = "/root/test.log"
+        path = '/root/test.log'
         with self.assertRaises(core.PossibleSudoRequired):
             self.log_fetcher.valid_path(path)
 
     def test_valid_path_permission_error_on_access(self) -> None:
         """Test a path where the directory is not readable."""
-        path = "/unreadable/path"
+        path = '/unreadable/path'
         # Create the directory so resolve(strict=True) passes.
         self.fs.create_dir(path)
         with mock.patch('logfetcher.core.os.access',
@@ -50,14 +53,16 @@ class TestValidPath(pyfakefs.fake_filesystem_unittest.TestCase):
 
     def test_valid_path_not_found(self) -> None:
         """Test a path that does not exist."""
-        path = "/non/existent/path/file.log"
+        path = '/non/existent/path/file.log'
         with self.assertRaises(FileNotFoundError):
             self.log_fetcher.valid_path(path)
 
 
 class TestMatchFiles(pyfakefs.fake_filesystem_unittest.TestCase):
+    """Test the match_files method."""
 
     def setUp(self) -> None:
+        """Sets up the test environment."""
         self.setUpPyfakefs()
         self.fs.create_dir('/good/path')
         self.mock_logger = mock.Mock(spec=logging.Logger)
@@ -85,7 +90,10 @@ class TestMatchFiles(pyfakefs.fake_filesystem_unittest.TestCase):
 
 
 class TestScrubExcluded(unittest.TestCase):
+    """Test the scrub_excluded method."""
+
     def setUp(self) -> None:
+        """Sets up the test environment."""
         self.mock_logger = mock.Mock(spec=logging.Logger)
         self.log_fetcher = core.LogFetcher(logger=self.mock_logger)
 
@@ -107,8 +115,10 @@ class TestScrubExcluded(unittest.TestCase):
 
 
 class TestGatherFiles(pyfakefs.fake_filesystem_unittest.TestCase):
+    """Test the gather_files method."""
 
     def setUp(self) -> None:
+        """Sets up the test environment."""
         self.setUpPyfakefs()
         self.fs.create_dir('/good/path')
         self.fs.create_file('/good/path/test1.log')
@@ -117,6 +127,7 @@ class TestGatherFiles(pyfakefs.fake_filesystem_unittest.TestCase):
         self.log_fetcher = core.LogFetcher(logger=self.mock_logger)
 
     def test_gather_files_success(self) -> None:
+        """Tests gathering multiple targets."""
         expected = [pathlib.Path('/good/path/test1.log'),
                     pathlib.Path('/good/path/test2.log')]
         result = self.log_fetcher.gather_files(
@@ -125,6 +136,7 @@ class TestGatherFiles(pyfakefs.fake_filesystem_unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_gather_files_with_excludes(self) -> None:
+        """Tests gathering one target with one exclude."""
         expected = [pathlib.Path('/good/path/test1.log')]
         result = self.log_fetcher.gather_files(
             targets=['/good/path/test1.log', '/good/path/test2.log'],
@@ -149,5 +161,5 @@ class TestGatherFiles(pyfakefs.fake_filesystem_unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
