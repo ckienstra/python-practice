@@ -47,5 +47,5 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "pylint>=3.3.1",
-    "genbadge[coverage,tests,pylint]>=1.1.1",
+    "genbadge[coverage,tests]>=1.1.1",
 ]

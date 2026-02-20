@@ -1,7 +1,7 @@
 # Log Fetcher
 
 ![Tests](tests.svg)
-![Linter](pylint.svg)
+![pylint]()
 ![Coverage](coverage.svg)
 
 Log Fetcher is a utility to find and count IP addresses within log files.

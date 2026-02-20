@@ -23,14 +23,12 @@ jobs:
         run: uv sync --all-extras --dev
       - name: Install project
         run: uv pip install -e .
-      - name: Analysing the code with pylint
-        run: uv run pylint --output-format=json:pylint.json $(git ls-files '*.py') || exit 0
-      - name: Generate Linter Badge
-        if: always()
-        run: uv run genbadge pylint -i pylint.json -o pylint.svg
-      - name: Commit Linter badge
-        if: always()
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Run Pylint and commit badge
+        uses: kgpl/gh-pylint@v1
         with:
-          commit_message: "chore: update pylint badge"
-          file_pattern: "pylint.svg"
+          repo: ${{ github.repository }}
+          branch: ${{ github.ref_name }}
+          user_name: "github-actions[bot]"
+          user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          paths: "logfetcher/ tests/"
+          fail_score: 8
