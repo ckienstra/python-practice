@@ -30,7 +30,7 @@ jobs:
       run: uv sync --all-extras --dev
 
     - name: Install project
-      run: uv install -e .
+      run: uv pip install -e .
 
     - name: Run unit tests and coverage
       # uv run automatically uses the virtual environment created by uv sync
