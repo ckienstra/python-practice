@@ -2,7 +2,9 @@
 
 import logging
 
-from .core import Error, LogFetcher, PossibleSudoRequired
+from .core import Error
+from .core import LogFetcher
+from .core import PossibleSudoRequired
 
 __all__ = ["Error", "LogFetcher", "PossibleSudoRequired"]
 
