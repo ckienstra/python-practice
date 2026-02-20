@@ -1,6 +1,7 @@
 # Log Fetcher
 
-![Tests](https://github.com/ckienstra/python-practice/actions/workflows/tests.yaml/badge.svg)
+![Tests](https://github.com/ckienstra/python-practice/actions/workflows/tests.yml/badge.svg)
+![Linter](https://github.com/ckienstra/python-practice/actions/workflows/pylint.yml/badge.svg)
 ![Coverage](https://raw.githubusercontent.com/ckienstra/python-practice/main/coverage.svg)
 
 Log Fetcher is a utility to find and count IP addresses within log files.

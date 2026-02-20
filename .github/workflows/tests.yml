@@ -18,30 +18,26 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Install uv and set Python version
+      uses: astral-sh/setup-uv@v5
       with:
-        python-version: "3.12" # You can adjust this based on your .python-version
+        enable-cache: true
+        python-version: "3.12" # Matches your .python-version
 
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        # Install testing and coverage tools
-        pip install pytest pytest-cov coverage-badge
-
-        # Install your project's dependencies (assumes pyproject.toml is present)
-        pip install -e .
+      # Syncs your pyproject.toml / uv.lock to an isolated virtual environment
+      run: uv sync --all-extras --dev
 
     - name: Run unit tests and coverage
-      run: |
-        # Replace 'logfetcher' with the specific directory you want to measure coverage for
-        pytest --cov=logfetcher --cov-report=term
+      # uv run automatically uses the virtual environment created by uv sync
+      # Note: replace 'logfetcher' if you want to measure a different directory
+      run: uv run pytest --cov=logfetcher --cov-report=term
 
     - name: Generate Coverage Badge
       # Only generate and commit the badge when pushing to main, not on PRs
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: |
-        coverage-badge -o coverage.svg -f
+      # uvx securely downloads and runs the tool on the fly
+      run: uvx coverage-badge -o coverage.svg -f
 
     - name: Commit Coverage Badge
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
