@@ -23,8 +23,6 @@ addopts = "--cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.ruff]
-# The directories Ruff should analyze
-# This prevents it from accidentally linting virtual environments or build folders
 src = ["logfetcher", "tests"]
 line-length = 88
 
@@ -38,6 +36,16 @@ strict = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 strict = false
+
+[tool.pylint.main]
+source-roots = ["logfetcher", "tests"]
+
+[tool.pylint.reports]
+# Force the score to be printed at the bottom of the output for the pylint badge
+score = true
+# Enable the full report (equivalent to --reports=y)
+reports = true
+output-format = "text"
 
 [tool.setuptools]
 packages = ["logfetcher"]

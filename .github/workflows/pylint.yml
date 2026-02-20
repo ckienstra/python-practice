@@ -26,27 +26,29 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
-      - name: Run Pylint and generate badge
-        # Wrapped in standard expression syntax for strict YAML linters
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      - name: Run Pylint
         run: |
           # 1. Run pylint and save the output. Use '|| true' to prevent immediate crash
           uv run pylint logfetcher > pylint_report.txt || true
 
-          # 2. Extract the score using standard bash grep
-          SCORE=$(grep -Po 'Your code has been rated at \K[-0-9.]+' pylint_report.txt || echo "0.00")
-
-          # 3. Use uvx to securely download and run anybadge to generate the SVG
-          uvx anybadge --label=pylint --value=$SCORE --file=pylint.svg 5=red 7=orange 9=yellow 10=green
-
-          # 4. Print the report to the console so you can review the actual errors
+          # 2. Print the report to the console so you can review the actual errors
           cat pylint_report.txt
 
-          # 5. Force the job to fail if the score drops below your acceptable threshold (e.g., 8.0)
+          # 3. Extract the score using standard bash grep
+          SCORE=$(grep -Po 'Your code has been rated at \K[-0-9.]+' pylint_report.txt || echo "0.00")
+
+          # 4. Force the job to fail if the score drops below your acceptable threshold (e.g., 8.0)
+          echo "Pylint score: $SCORE"
           uv run python -c "import sys; sys.exit(1) if float('$SCORE') < 8.0 else sys.exit(0)"
 
+      - name: Generate Pylint Badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          SCORE=$(grep -Po 'Your code has been rated at \K[-0-9.]+' pylint_report.txt || echo "0.00")
+          uvx anybadge --label=pylint --value=$SCORE --file=pylint.svg 5=red 7=orange 9=yellow 10=green
+
       - name: Commit Pylint Badge
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update pylint badge"
