@@ -13,11 +13,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--targets", help="The target file location and pattern.",
-        required=True, nargs='+', type=str
+        required=True, nargs="+", type=str
     )
     parser.add_argument(
         "--excludes", help="File paths or patterns to exclude from search.",
-        required=False, nargs='*', type=str, default="",
+        required=False, nargs="*", type=str, default="",
     )
     args = parser.parse_args()
 
@@ -28,7 +28,7 @@ def main() -> None:
     log_fetcher = LogFetcher(logger)
     files: list[Path] = log_fetcher.gather_files(args.targets, args.excludes)
 
-    logging.info(f"Matched files: {files}")
+    logging.info("Matched files: %s", files)
 
 
 if __name__ == "__main__":
