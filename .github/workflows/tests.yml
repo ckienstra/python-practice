@@ -23,7 +23,7 @@ jobs:
       with:
         enable-cache: true
         python-version: "3.12" # Matches your .python-version
-        cache-dependency-path: pyproject.toml
+        cache-dependency-glob: pyproject.toml
 
     - name: Install dependencies
       # Syncs your pyproject.toml / uv.lock to an isolated virtual environment
