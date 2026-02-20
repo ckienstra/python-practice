@@ -1,4 +1,5 @@
 """logfetcher finds IP addresses in logs and displays their frequency."""
+import logging
 import os
 from pathlib import Path
 
@@ -13,22 +14,22 @@ class PossibleSudoRequired(Error):
 
 class LogFetcher:
 
+    def __init__(self, logger: logging.Logger | None = None) -> None:
+        """Initializes the LogFetcher."""
+        # Use the provided logger or get a logger for the current module.
+        self.logger = logger or logging.getLogger(__name__)
+
     def valid_path(self, path: str) -> Path:
         """Validates that a path's parent directory exists and is readable."""
         dirpath: Path = Path(path)
         try:
             # strict=True will raise FileNotFoundError if path doesn't exist.
-            resolved_path: Path = dirpath.parent.resolve(strict=True)
+            resolved_path: Path = dirpath.resolve(strict=True)
         except PermissionError as e:
             raise PossibleSudoRequired(
                 f"Access denied during path resolution for \"{path}\", "
                 "try again with sudo"
             ) from e
-
-        if not resolved_path.is_dir():
-            raise NotADirectoryError(
-                f"{resolved_path} is not a directory."
-            )
 
         # Also check for read access, which resolve() does not guarantee.
         if not os.access(resolved_path, os.R_OK):
@@ -38,6 +39,48 @@ class LogFetcher:
             )
 
         return resolved_path
+
+    def match_files(
+        self,
+        dirpath: Path,
+        pattern: str,
+    ) -> list[Path]:
+        matches: list[Path] = []
+        for file in dirpath.glob(pattern):
+            try:
+                matches.append(file.resolve(strict=True))
+            except OSError as e:
+                self.logger.info("Unable to resolve file, skipping: "
+                                 f"\"{file.absolute()}\", error: {e}")
+        return matches
+
+    def scrub_excluded(
+        self,
+        matches: list[Path],
+        excludes: list[str],
+    ) -> list[Path]:
+        scrubbed_matches: list[Path] = matches.copy()
+        # Exclude is almost certainly a smaller list than matches.
+        for exclude in excludes:
+            for file in matches:
+                if file.match(exclude, case_sensitive=True):
+                    scrubbed_matches.remove(file)
+        return scrubbed_matches
+
+    def gather_files(
+        self,
+        targets: list[str],
+        excludes: list[str],
+    ) -> list[Path]:
+        matches: list[Path] = []
+        for target in targets:
+            parent: str = target.rsplit("/", 1)[0]
+            pattern: str = target.rsplit("/", 1)[1]
+            dir: Path = self.valid_path(parent)
+            files: list[Path] = self.match_files(dir, pattern)
+            scrubbed_files: list[Path] = self.scrub_excluded(files, excludes)
+            matches.extend(scrubbed_files)
+        return matches
 
 # Organizing my thoughts:
 # What does this program do?
