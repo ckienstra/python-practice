@@ -23,11 +23,14 @@ jobs:
         run: uv sync --all-extras --dev
       - name: Install project
         run: uv pip install -e .
-      - name: Generate requirements.txt
-        run: uv pip freeze > requirements.txt
-      - name: Run Pylint and commit badge
-        uses: kgpl/gh-pylint@v1
+      - name: Run Pylint
+        run: uv run pylint --output-format=json:pylint.json logfetcher/ tests/ || true
+      - name: Generate badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: uv run genbadge pylint -i pylint.json -o pylint.svg
+      - name: Commit badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          package-path: logfetcher
-          python-version: 3.12
-          readme-path: README.md
+          commit_message: "chore: update pylint badge"
+          file_pattern: "pylint.svg"
