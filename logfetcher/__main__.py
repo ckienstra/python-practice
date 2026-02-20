@@ -1,4 +1,5 @@
 """Command-line interface for logfetcher."""
+# pylint: disable=invalid-name
 import argparse
 import logging
 from pathlib import Path
@@ -17,7 +18,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--excludes", help="File paths or patterns to exclude from search.",
-        required=False, nargs="*", type=str, default="",
+        required=False, nargs="*", type=str, default=[],
     )
     args = parser.parse_args()
 
