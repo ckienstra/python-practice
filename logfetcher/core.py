@@ -1,7 +1,17 @@
 """logfetcher finds IP addresses in logs and displays their frequency."""
+
+from collections import Counter
+import concurrent.futures
 import logging
 import os
 from pathlib import Path
+import typing
+
+# Google RE2 offers some speed benefits versus default re
+try:
+    import re2 as re  # type: ignore
+except ImportError:
+    import re
 
 
 class Error(Exception):
@@ -28,7 +38,7 @@ class LogFetcher:
             resolved_path: Path = dirpath.resolve(strict=True)
         except PermissionError as e:
             raise PossibleSudoRequired(
-                f"Access denied during path resolution for \"{path}\", "
+                f'Access denied during path resolution for "{path}", '
                 "try again with sudo"
             ) from e
 
@@ -52,8 +62,10 @@ class LogFetcher:
             try:
                 matches.append(file.resolve(strict=True))
             except OSError as e:
-                self.logger.info("Unable to resolve file, skipping: "
-                                 f"\"{file.absolute()}\", error: {e}")
+                self.logger.info(
+                    "Unable to resolve file, skipping: "
+                    f'"{file.absolute()}", error: {e}'
+                )
         return matches
 
     def scrub_excluded(
@@ -85,6 +97,79 @@ class LogFetcher:
             scrubbed_files: list[Path] = self.scrub_excluded(files, excludes)
             matches.extend(scrubbed_files)
         return matches
+
+
+class LogScanner:
+    """LogScanner is an object to scan logs for IP addresses."""
+
+    def __init__(
+        self,
+        files: list[Path],
+        logger: logging.Logger | None = None,
+    ) -> None:
+        """Initializes the LogScanner.
+
+        Args:
+            files: The files to scan.
+            logger: The logger to use.
+        """
+        self.logger: logging.Logger = logger or logging.getLogger(__name__)
+        # Don't assign type hints for property overloads
+        self.files = files
+        # A Counter is like a dict[str, int] with convenience methods.
+        self.ip_count: Counter[str] = Counter()
+        self.ip_re: typing.Pattern[str] | typing.Any = re.compile(
+            r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b"
+        )
+
+    @property
+    def files(self) -> list[Path]:
+        """Get the files to scan."""
+        return self._files
+
+    @files.setter
+    def files(self, files: list[Path]) -> None:
+        """Input checking for files to scan."""
+        if len(files) == 0:
+            raise ValueError("files cannot be empty")
+        self._files = files
+
+    def scan_file(self, file: Path) -> Counter[str]:
+        """Scan a file for IP addresses and return a counter of them."""
+        ip_counter: Counter[str] = Counter()
+        try:
+            with open(file, encoding="utf-8") as f:
+                for line in f:
+                    # re2.search might be too memory intensive for large files.
+                    # We can instead pass a per-line findall iterable directly.
+                    ip_counter.update(self.ip_re.findall(line))
+        except OSError as e:
+            # The goal is to scan as much as possible, best-effort.
+            self.logger.error(
+                'Unable to read file "%s". Skipping: %s', file, e
+            )
+        return ip_counter
+
+    def scan_files_serialized(self) -> None:
+        """Scan files serially."""
+        for file in self.files:
+            self.ip_count.update(self.scan_file(file))
+
+    def scan_files_parallel(self) -> None:
+        """Scan files in parallel."""
+        # Remember that thread pools are concurrent, not multiprocessed.
+        # This feels ideal for filesystem I/O.
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = executor.map(self.scan_file, self.files)
+            # Results are combined serially, so no lock is needed.
+            for result_counter in results:
+                self.ip_count.update(result_counter)
+
+    def print_results(self) -> None:
+        """Print the results."""
+        for ip, count in self.ip_count.most_common():
+            print(f"{ip}: {count}")
+
 
 # Organizing my thoughts:
 # What does this program do?

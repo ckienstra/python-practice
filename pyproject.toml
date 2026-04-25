@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "google-re2>=1.1.20251105",
     "pytest-cache>=1.0",
     "setuptools>=70.3.0",
 ]

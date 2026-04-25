@@ -1,5 +1,6 @@
 """Test the logfetcher."""
 
+from collections import Counter
 import logging
 import os
 import pathlib
@@ -159,6 +160,43 @@ class TestGatherFiles(pyfakefs.fake_filesystem_unittest.TestCase):
         result = self.log_fetcher.gather_files(
             targets=['/good/path/*.log'], excludes=['/good/path/*'])
         self.assertEqual(result, expected)
+
+
+class TestLogScanner(pyfakefs.fake_filesystem_unittest.TestCase):
+    """Test the LogScanner class."""
+
+    def setUp(self) -> None:
+        """Sets up the test environment."""
+        self.mock_logger = mock.Mock(spec=logging.Logger)
+        self.setUpPyfakefs()
+
+    def test_empty_files_raises_value_error(self) -> None:
+        """Test that empty files raises a ValueError."""
+        empty_file_list: list[pathlib.Path] = []
+        with self.assertRaises(ValueError):
+            core.LogScanner(files=empty_file_list)
+
+    def test_scan_file_success(self) -> None:
+        """Test scanning a file."""
+        expected: Counter[str] = Counter({'192.168.1.1': 2})
+        self.fs.create_file('ip_file.log', contents='192.168.1.1\n192.168.1.1')
+        file_path: pathlib.Path = pathlib.Path('ip_file.log')
+        scanner = core.LogScanner(files=[file_path])
+        result = scanner.scan_file(pathlib.Path(file_path))
+        self.assertEqual(result, expected)
+
+    def test_scan_file_os_error(self) -> None:
+        """Test best-effort scanning of a file that doesn't exist."""
+        self.fs.create_file('non_existent_file.log')
+        non_existent_file: pathlib.Path = pathlib.Path('non_existent_file.log')
+        scanner = core.LogScanner(files=[non_existent_file])
+        # Delete the file to force a read error
+        self.fs.remove('non_existent_file.log')
+        # The file should be skipped without halting progress
+        self.assertEqual(
+            scanner.scan_file(pathlib.Path('non_existent_file.log')),
+            Counter()
+        )
 
 
 if __name__ == '__main__':
