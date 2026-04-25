@@ -22,6 +22,8 @@ dill==0.4.1
 execnet==2.1.2
     # via pytest-cache
 genbadge==1.1.3
+google-re2==1.1.20251105
+    # via python-practice
 idna==3.11
     # via requests
 iniconfig==2.3.0
